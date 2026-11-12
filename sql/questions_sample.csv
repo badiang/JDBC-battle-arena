@@ -1,0 +1,3 @@
+topic,question,option_a,option_b,option_c,option_d,correct_answer,difficulty
+JDBC,Which Java class manages JDBC connections?,JTable,DriverManager,Scanner,FileReader,B,Easy
+MySQL,Which SQL statement changes existing rows?,INSERT,SELECT,UPDATE,CREATE,C,Easy

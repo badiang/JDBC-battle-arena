@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JDBC Battle Arena</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><h1>⚔ JDBC Battle Arena</h1><span id="identity"></span><button id="logout" hidden>Logout</button></header>
+<main>
+<section id="loginView" class="card narrow"><h2>Sign in</h2><form id="loginForm"><label>Student / Instructor ID<input name="student_id" required autocomplete="username"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><button>Login</button></form></section>
+<section id="passwordView" class="card narrow hidden"><h2>Change temporary password</h2><p>For security, set your own password before joining a match.</p><form id="passwordForm"><label>Current password<input name="old_password" type="password" required></label><label>New password (10+ characters)<input name="new_password" type="password" minlength="10" required></label><button>Change password</button></form></section>
+<section id="adminView" class="hidden"><div class="tabs"><button data-tab="students">Student Accounts</button><button data-tab="questions">Questions</button><button data-tab="matches">Matches</button><button data-tab="reports">Reports</button></div>
+<div id="studentsTab" class="card"><h2>Create student account</h2><form id="studentForm" class="formgrid"><label>Student ID<input name="student_id" required maxlength="40"></label><label>Full name<input name="full_name" required></label><label>Section<input name="section"></label><label>Temporary password<input name="password" type="text" minlength="10" required placeholder="10+ characters"></label><button>Create account</button></form><h3>Bulk import student accounts</h3>
+<p class="small">CSV headers: <code>student_id,full_name,section</code>. Maximum 100 students per import. Existing student IDs are skipped. New accounts receive secure random temporary passwords and must change them on first login.</p>
+<div class="inline"><input id="studentCsv" type="file" accept=".csv,text/csv" aria-label="Choose student CSV"><button id="importStudents" type="button">Import Students CSV</button></div>
+<p id="studentImportResult" class="small" aria-live="polite"></p>
+<p class="small">The credentials CSV downloads once after import. Store it securely and distribute passwords privately. Existing passwords cannot be exported.</p>
+<h3>Students</h3><div class="formgrid filters"><label>Search students<input id="studentSearch" placeholder="ID or name"></label><label>Filter section<select id="studentSectionFilter"><option value="">All sections</option></select></label><label>Status<select id="studentStatusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label></div><div id="studentStats" class="stats"></div><div id="studentList"></div></div>
+<div id="questionsTab" class="card hidden">
+<h2>Question Bank Management</h2>
+<div id="questionStats" class="stats"></div>
+<h3 id="questionFormTitle">Add multiple-choice question</h3>
+<form id="questionForm" class="formgrid">
+<label>Topic<input name="topic" maxlength="80" required></label>
+<label>Difficulty<select name="difficulty"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></label>
+<label class="wide">Question<textarea name="question" maxlength="2000" required></textarea></label>
+<label>Option A<input name="option_a" maxlength="500" required></label>
+<label>Option B<input name="option_b" maxlength="500" required></label>
+<label>Option C<input name="option_c" maxlength="500" required></label>
+<label>Option D<input name="option_d" maxlength="500" required></label>
+<label>Correct answer<select name="correct_answer"><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
+<div class="inline"><button id="questionSubmit">Add question</button><button type="button" id="cancelQuestionEdit" class="secondary hidden">Cancel edit</button></div>
+</form>
+<h3>Bulk import from CSV</h3>
+<p class="small">Required CSV headers: topic,question,option_a,option_b,option_c,option_d,correct_answer,difficulty. Up to 200 questions per import. Existing questions are not overwritten.</p>
+<input type="file" id="questionCsv" accept=".csv,text/csv">
+<button type="button" id="importQuestions">Import CSV</button>
+<h3>Question bank</h3>
+<div class="formgrid filters">
+<label>Search<input id="questionSearch" placeholder="Search topic, question, or choice"></label>
+<label>Topic<select id="questionTopicFilter"><option value="">All topics</option></select></label>
+<label>Difficulty<select id="questionDifficultyFilter"><option value="">All difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
+<label>Status<select id="questionStatusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+</div>
+<div id="questionList"></div>
+</div>
+<div id="matchesTab" class="card hidden"><h2>Create 1v1 match</h2><form id="matchForm" class="formgrid"><label>Player 1<select name="player1" id="player1" required></select></label><label>Player 2<select name="player2" id="player2" required></select></label><label>Questions<input type="number" name="question_count" value="10" min="1" max="50" required></label><label>Seconds per question<input type="number" name="seconds_per_question" value="20" min="5" max="120" required></label><label>Topic<select id="battleTopic" name="topic_filter"><option value="">All topics</option></select></label><label>Difficulty<select name="difficulty_filter"><option value="">Mixed (all difficulties)</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><label>Scheduled start (optional, local time)<input type="datetime-local" name="scheduled_at"></label><p class="small wide">Scheduled battles start manually: the Start button becomes eligible at the chosen time. Each battle begins with a 3-second countdown.</p><button>Create match</button></form><section class="auto-pairing"><h3>Auto Random Matching — Entire Section</h3><p class="small">Select a section and preview randomly generated pairs. Shuffle Again changes the pairings. No matches are saved until you confirm. All generated battles remain Waiting until the instructor starts them.</p><form id="autoPairForm" class="formgrid"><label>Section<select name="section" id="autoSection" required><option value="">Select section</option></select></label><label>Questions per battle<input name="question_count" type="number" min="1" max="50" value="5" required></label><label>Seconds per question<input name="seconds_per_question" type="number" min="5" max="120" value="30" required></label><label>Topic<select name="topic_filter" id="autoTopic"><option value="">All topics</option></select></label><label>Difficulty<select name="difficulty_filter"><option value="">Mixed</option><option>Easy</option><option>Medium</option><option>Hard</option></select></label><div class="wide inline"><button type="submit" id="autoPreviewBtn">Preview Random Pairings</button><button type="button" id="autoShuffleBtn" class="secondary" disabled>Shuffle Again</button></div></form><div id="autoPairResult" aria-live="polite"></div><div class="inline"><button id="autoConfirmBtn" type="button" disabled>Create All Matches (Confirm)</button></div></section><h3>Matches / Battle History</h3><div id="adminMatches"></div></div>
+<div id="reportsTab" class="card hidden"><h2>Leaderboard and reports</h2><p><a href="/api/reports.csv" download>Download complete match report (CSV)</a></p><div id="leaderboard"></div></div>
+</section>
+<section id="studentView" class="hidden"><div class="card"><h2>My matches</h2><p>Wait for your instructor to create and start a match. You can join a waiting match now.</p><div id="myMatches"></div></div><div class="card"><h2>Class leaderboard</h2><div id="studentLeaderboard"></div></div></section>
+<section id="gameView" class="card hidden"><button id="backBtn" class="secondary">← Dashboard</button><h2 id="gameTitle">Battle</h2><div id="gamePlayers" class="scoreboard"></div><div class="timer">Time remaining: <strong id="countdown">--</strong>s</div><p id="roundLabel"></p><h2 id="questionText"></h2><div id="choices" class="choices"></div><p id="gameNotice"></p></section>
+<div id="notice" role="status" aria-live="polite"></div>
+</main><script src="/socket.io/socket.io.js"></script><script src="/app.js"></script></body></html>
